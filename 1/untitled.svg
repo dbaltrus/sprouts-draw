@@ -1,0 +1,6 @@
+<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg width="700" height="700" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><defs class="svg-crowbar"><style type="text/css"><![CDATA[
+svg { border: 1px solid black; }
+circle { fill: #ffffff; stroke: #000000; stroke-width: 2px; }
+.filled { fill: #000000; }
+path { fill: none; stroke: #000000; stroke-width: 2px; }
+.bold { stroke-width: 3px; }]]></style></defs><path class="bold" d="M290.99999046325684,121.99999809265137Q577.7000200271607,168.40000495910644,561.000020980835,182.0000057220459Q544.3000219345092,195.60000648498536,124,258.0000057220459"></path><circle r="10" cx="290.99999046325684" cy="121.99999809265137"></circle><circle r="10" cx="561.000020980835" cy="182.0000057220459"></circle><circle r="10" cx="124" cy="258.0000057220459" class="filled"></circle></svg>

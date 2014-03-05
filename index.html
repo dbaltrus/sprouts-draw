@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+
+<meta charset="utf-8">
+
+<style>
+
+svg {
+  border: 1px solid black;
+}
+
+circle {
+  fill: white;
+  stroke: black;
+  stroke-width: 2px;
+}
+
+.filled {
+  fill: black;
+}
+
+.control {
+  fill: grey;
+  stroke: grey;
+}
+
+.line {
+  fill: none;
+  stroke: black;
+  stroke-width: 2px;
+}
+
+.bold {
+  stroke-width: 3px;
+}
+
+.dashed {
+  stroke-dasharray: 10,10;
+}
+
+text {
+  font: 18px sans-serif;
+  pointer-events: none;
+  text-shadow: 0 3px 0 #fff, 3px 0 0 #fff, 0 -3px 0 #fff, -3px 0 0 #fff;
+}
+
+</style>
+
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js"></script>
+<script type="text/javascript" src="http://pixelgraphics.us/downloadify/js/downloadify.min.js"></script>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+
+<body>
+
+<script>
+
+var points, spots, lines, lineGenerator, svg, directory, control, drag;
+
+function draw() {
+  var svgLines = svg
+    .selectAll('path.line')
+    .data(lines);
+  svgLines
+    .enter()
+    .append('path')
+    .attr('class', function (d) { return d.classed; })
+    .classed('line', true)
+    .attr("marker-end", function (d) { return d.arrow ? "url(#arrow)" : "none"; });
+  svgLines
+    .attr('d', lineGenerator)
+  var svgSpots = svg
+    .selectAll('circle')
+    .data(spots);
+  circles = svgSpots
+    .enter()
+    .append('circle');
+  circles
+    .attr('r', 10)
+    .attr('cx', function (d) { return d.point.x; })
+    .attr('cy', function (d) { return d.point.y; })
+    .attr('class', function (d) { return d.classed; })
+    .call(drag);
+  var text = svg
+    .selectAll("text")
+    .data(spots);
+  text
+    .enter()
+    .append("text");
+  text
+    .attr("x", function (d) { return d.point.x + 20; })
+    .attr("y", function (d) { return d.point.y + 7; })
+    .text(function(d) { return d.label; });
+  if (control) {
+    circles
+      .filter(function (d) { return d.control; })
+      .classed('control', true)
+      .attr('r', 7)
+  }
+}
+
+function getPoint(point) {
+  if (points[point] !== undefined) {
+    return points[point];
+  } else {
+    points[point] = {
+      x: 100,
+      y: 100
+    };
+    return points[point];
+  }
+};
+
+var semaphore = 0;
+function callback() {
+  semaphore += 1;
+  if (semaphore > 2) {
+    lines = lines.map(function (line) {
+      mapped = line.points.map(function (point) {
+        return getPoint(point);
+      });
+      mapped.classed = line.classed;
+      mapped.arrow = line.arrow;
+      return mapped;
+    });
+    spots.forEach(function (spot) {
+      spot.point = getPoint(spot.point);
+      spot.point.spot = true;
+    });
+    if (control) {
+      points.filter(function (point) {
+        return !point.spot;
+      }).forEach(function (point) {
+        spots.push({
+          point: point,
+          control: true
+        });
+      });
+    }
+    draw();
+  }
+}
+
+function dragged(d) {
+  d3
+    .select(this)
+    .attr("cx", d.point.x = d3.event.x)
+    .attr("cy", d.point.y = d3.event.y);
+  draw();
+}
+
+function getPointsTsv() {
+  text = 'x,y';
+  text += points.map(function (point) {
+    return '\n' + point.x + ',' + point.y;
+  }).join('');
+  return text;
+}
+
+window.onload = function () {
+  drag = d3.behavior.drag()
+    .origin(function(d) { return d.point; })
+    .on("drag", dragged);
+
+  var flags = window.location.hash.slice(1).split(',');
+  directory = flags[0];
+  control = flags[1] === 'control';
+
+  svg = d3.select("body").append("svg")
+    .attr("width", 700)
+    .attr("height", 500);
+
+  svg.append("defs")
+    .append("marker")
+    .attr("id", "arrow")
+    .attr("viewBox", "0 -5 10 10")
+    .attr("refX", 15)
+    .attr("refY", 0)
+    .attr("markerWidth", 20)
+    .attr("markerHeight", 20)
+    .attr("markerUnits", "userSpaceOnUse")
+    .attr("orient", "auto")
+    .append("path")
+    .attr("d", "M0,-5L10,0L0,5L3,0");
+
+  d3.csv(directory + "/points.csv", function(error, data) {
+    if (data) {
+      data.forEach(function (d) {
+        d.x = +d.x;
+        d.y = +d.y;
+      });
+      points = data;
+    } else {
+      points = [];
+    }
+   callback();
+  });
+
+  d3.csv(directory + "/spots.csv", function(error, data) {
+    data.forEach(function (d) {
+      d.point = +d.point;
+      d.classed = d['class'] || '';
+    });
+    spots = data;
+    callback();
+  });
+
+  d3.csv(directory + "/lines.csv", function(error, data) {
+    data.forEach(function (d) {
+      d.points = d.points.split(' ').map(function (point) {
+        return +point;
+      });
+      d.classed = d['class'] || '';
+      d.arrow = !!(+d.arrow);
+    });
+    lines = data;
+    callback();
+  });
+
+  lineGenerator = d3.svg.line()
+    .x(function (d) { return d.x; })
+    .y(function (d) { return d.y; })
+    .interpolate('cardinal')
+    .tension(0.5);
+
+  Downloadify.create('downloadify', {
+    filename: 'points.csv',
+    data: getPointsTsv,
+    transparent: false,
+    swf: 'http://pixelgraphics.us/downloadify/media/downloadify.swf',
+    downloadImage: 'http://pixelgraphics.us/downloadify/images/download.png',
+    width: 100,
+    height: 30,
+    transparent: true,
+    append: false
+  });
+};
+
+</script>
+
+<div id="downloadify"></div>
+
+</body>
+
