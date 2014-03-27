@@ -12,6 +12,7 @@ circle {
   fill: white;
   stroke: black;
   stroke-width: 2px;
+  cursor: pointer;
 }
 
 .filled {
@@ -23,24 +24,39 @@ circle {
   stroke: grey;
 }
 
-.line {
-  fill: none;
-  stroke: black;
-  stroke-width: 2px;
+circle.control-hidden,circle.hidden {
+  fill: transparent;
+  stroke: transparent;
 }
 
-.bold {
+.line, .custom {
+  fill: none;
+  stroke: black;
   stroke-width: 3px;
 }
 
+.tri {
+  stroke: grey;
+}
+
+.bold {
+  stroke-width: 5px;
+}
+
 .dashed {
-  stroke-dasharray: 10,10;
+  stroke-dasharray: 25,20;
 }
 
 text {
-  font: 18px sans-serif;
+  font: 20px sans-serif;
+  font-weight: bold;
   pointer-events: none;
-  text-shadow: 0 3px 0 #fff, 3px 0 0 #fff, 0 -3px 0 #fff, -3px 0 0 #fff;
+  background: white;
+}
+
+.big {
+  font-size: 30px;
+  font-weight: normal;
 }
 
 </style>
@@ -53,9 +69,21 @@ text {
 
 <script>
 
-var points, spots, lines, lineGenerator, svg, directory, control, drag;
+var points, spots, lines, lineGenerator, svg, directory, control, drag, custom;
 
 function draw() {
+  if (!custom) {
+    if (directory === '2') {
+      svg.append('path')
+        .attr('d', "M340,240 a50,50 0 1,0 -50,-50")
+        .classed('custom', true);
+      svg.append('path')
+        .attr('d', "M340,260 a70,70 0 0,0 70,-70")
+        .classed('custom', true);
+    }
+    custom = true;
+  }
+
   var svgLines = svg
     .selectAll('path.line')
     .data(lines);
@@ -84,17 +112,16 @@ function draw() {
     .data(spots);
   text
     .enter()
-    .append("text");
+    .append("text")
+    .attr('class', function (d) { return d.classed; });
   text
     .attr("x", function (d) { return d.point.x + 20; })
     .attr("y", function (d) { return d.point.y + 7; })
     .text(function(d) { return d.label; });
-  if (control) {
-    circles
-      .filter(function (d) { return d.control; })
-      .classed('control', true)
-      .attr('r', 7)
-  }
+  circles
+    .filter(function (d) { return d.control; })
+    .classed(control ? 'control' : 'control-hidden', true)
+    .attr('r', 15);
 }
 
 function getPoint(point) {
@@ -125,16 +152,14 @@ function callback() {
       spot.point = getPoint(spot.point);
       spot.point.spot = true;
     });
-    if (control) {
-      points.filter(function (point) {
-        return !point.spot;
-      }).forEach(function (point) {
-        spots.push({
-          point: point,
-          control: true
-        });
+    points.filter(function (point) {
+      return !point.spot;
+    }).forEach(function (point) {
+      spots.push({
+        point: point,
+        control: true
       });
-    }
+    });
     draw();
   }
 }
@@ -142,16 +167,21 @@ function callback() {
 function dragged(d) {
   d3
     .select(this)
-    .attr("cx", d.point.x = d3.event.x)
-    .attr("cy", d.point.y = d3.event.y);
+    .attr("cx", d.point.x = Math.floor(d3.event.x / 10) * 10)
+    .attr("cy", d.point.y = Math.floor(d3.event.y / 10) * 10);
   draw();
 }
 
 function getPointsTsv() {
-  text = 'x,y';
-  text += points.map(function (point) {
-    return '\n' + point.x + ',' + point.y;
-  }).join('');
+  var i;
+  text = 'nr,x,y';
+  i = points.length;
+  while (i--) {
+    if (points[i]) {
+      text += '\n' + i + ',' + points[i].x + ',' + points[i].y;
+    }
+  }
+
   return text;
 }
 
@@ -182,16 +212,16 @@ window.onload = function () {
     .attr("d", "M0,-5L10,0L0,5L3,0");
 
   d3.csv(directory + "/points.csv", function(error, data) {
+    points = [];
     if (data) {
       data.forEach(function (d) {
-        d.x = +d.x;
-        d.y = +d.y;
+        d.nr = +d.nr;
+        points[d.nr] = {};
+        points[d.nr].x = +d.x;
+        points[d.nr].y = +d.y;
       });
-      points = data;
-    } else {
-      points = [];
     }
-   callback();
+    callback();
   });
 
   d3.csv(directory + "/spots.csv", function(error, data) {
