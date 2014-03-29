@@ -29,6 +29,15 @@ circle.control-hidden,circle.hidden {
   stroke: transparent;
 }
 
+.point {
+  fill: black;
+  stroke: black;
+}
+
+.transparent {
+  fill: transparent;
+}
+
 .line, .custom {
   fill: none;
   stroke: black;
@@ -36,7 +45,7 @@ circle.control-hidden,circle.hidden {
 }
 
 .tri {
-  stroke: grey;
+  stroke: #bbb;
 }
 
 .bold {
@@ -48,15 +57,15 @@ circle.control-hidden,circle.hidden {
 }
 
 text {
-  font: 20px sans-serif;
-  font-weight: bold;
+  font: 40px sans-serif;
+  /*font-weight: bold;*/
   pointer-events: none;
   background: white;
 }
 
 .big {
-  font-size: 30px;
-  font-weight: normal;
+  font-size: 60px;
+  /*font-weight: normal;*/
 }
 
 </style>
@@ -75,10 +84,10 @@ function draw() {
   if (!custom) {
     if (directory === '2') {
       svg.append('path')
-        .attr('d', "M340,240 a50,50 0 1,0 -50,-50")
+        .attr('d', "M544,384 a80,80 0 1,0 -80,-80")
         .classed('custom', true);
       svg.append('path')
-        .attr('d', "M340,260 a70,70 0 0,0 70,-70")
+        .attr('d', "M544,416 a112,112 0 0,0 112,-112")
         .classed('custom', true);
     }
     custom = true;
@@ -102,7 +111,7 @@ function draw() {
     .enter()
     .append('circle');
   circles
-    .attr('r', 10)
+    .attr('r', function (d) { return d.classed.indexOf('point') >= 0 ? 5 : 10; })
     .attr('cx', function (d) { return d.point.x; })
     .attr('cy', function (d) { return d.point.y; })
     .attr('class', function (d) { return d.classed; })
@@ -116,7 +125,7 @@ function draw() {
     .attr('class', function (d) { return d.classed; });
   text
     .attr("x", function (d) { return d.point.x + 20; })
-    .attr("y", function (d) { return d.point.y + 7; })
+    .attr("y", function (d) { return d.point.y + 14; })
     .text(function(d) { return d.label; });
   circles
     .filter(function (d) { return d.control; })
@@ -157,7 +166,8 @@ function callback() {
     }).forEach(function (point) {
       spots.push({
         point: point,
-        control: true
+        control: true,
+        classed: ''
       });
     });
     draw();
@@ -178,7 +188,7 @@ function getPointsTsv() {
   i = points.length;
   while (i--) {
     if (points[i]) {
-      text += '\n' + i + ',' + points[i].x + ',' + points[i].y;
+      text += '\n' + i + ',' + (points[i].x / 1.6) + ',' + (points[i].y / 1.6);
     }
   }
 
@@ -195,8 +205,8 @@ window.onload = function () {
   control = flags[1] === 'control';
 
   svg = d3.select("body").append("svg")
-    .attr("width", 700)
-    .attr("height", 500);
+    .attr("width", 1120)
+    .attr("height", 800);
 
   svg.append("defs")
     .append("marker")
@@ -217,8 +227,8 @@ window.onload = function () {
       data.forEach(function (d) {
         d.nr = +d.nr;
         points[d.nr] = {};
-        points[d.nr].x = +d.x;
-        points[d.nr].y = +d.y;
+        points[d.nr].x = +d.x * 1.6;
+        points[d.nr].y = +d.y * 1.6;
       });
     }
     callback();
